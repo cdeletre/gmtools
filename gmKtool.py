@@ -558,7 +558,7 @@ def main():
 
     parser = argparse.ArgumentParser(description='GameMaker K-dog tool: compress wav to ogg in Gamemaker data files')
     parser.add_argument('-v','--verbose', action='count', default=0, help='Verbose level (cumulative option)')
-    parser.add_argument('-m','--minsize', default=MIN_SIZE, help='Minimum WAV size in bytes to target (default 1MB)')
+    parser.add_argument('-m','--minsize', default=MIN_SIZE, type=int, help='Minimum WAV size in bytes to target (default 1MB)')
     parser.add_argument('-a','--audiogroup', nargs='?',action='append',type=int, help='Audiogroup ID to process (option can repeat). By default any.')
     parser.add_argument('-b','--bitrate', default=128, help='nominal bitrate (in kbps) to encode at (oggenc -b option). Default 128 kbps')
     parser.add_argument('-y', '--yes', default=False, action='store_true', help='Overwrite the files if already present without asking (DANGEROUS, use with caution)')
