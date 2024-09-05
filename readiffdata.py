@@ -4,6 +4,7 @@ import argparse
 import os
 from struct import unpack, pack
 from pathlib import Path
+import json
 
 
 CHUNK_W_ENTRIES = [ b'AUDO', \
@@ -71,10 +72,60 @@ def read_chunk_entries(fin,token,size,args, extract):
 
     elif token == b'AUDO':
         read_audo_entries(fin,size,chunk_nbentries,args, extract)
+    
+    elif token == b'SOND':
+        read_sond_entries(fin,size,chunk_nbentries,args, extract)
 
     else:
         fin.seek(size-4,1)
         return
+
+def read_str(fin,offset):
+	if offset == 0x0:
+		return ""
+	cur_offset=fin.tell()
+	fin.seek(offset-4)
+	text=fin.read(unpack('<I',fin.read(4))[0]).decode('utf-8')
+	fin.seek(cur_offset)
+	return text
+
+def read_sond_entries(fin,size,nbentries,args, extract):
+    entry_table_offset = fin.tell()
+
+    offset_table = []
+
+    for i in range(nbentries):
+        offset_table.append(unpack('<I',fin.read(4))[0])
+
+    sounds = {}
+
+    for i,offset in enumerate(offset_table):
+        fin.seek(offset)
+        name = read_str(fin,unpack('<I',fin.read(4))[0])
+        flags = unpack('<I',fin.read(4))[0]
+        type = read_str(fin,unpack('<I',fin.read(4))[0])
+        file = read_str(fin,unpack('<I',fin.read(4))[0])
+        [ effect, volume, pitch, audiogroup, audiofile ] = \
+                unpack('<IffII', fin.read(20))
+        key=f"{i:#04}" 
+        sounds[key] = {
+							"name" : name,
+							"flags" : f"{flags:#4x}",
+							"type" : type,
+							"file" : file,
+							"effect" : effect,
+							"volume" : volume,
+							"pitch" : pitch,
+							"audiogroup" : audiogroup,
+							"audiofile" : audiofile
+						}
+        print(f"     {key} -> {sounds[key]}")
+
+    if extract:
+        with open("sond.json", 'w', encoding='utf-8') as jsonfile:
+            jsonfile.write(json.dumps(sounds, indent=4))
+
+    fin.seek(entry_table_offset + size - 4)
 
 def read_audo_entries(fin,size,nbentries,args , extract):
     global AUDO_DIR
@@ -113,7 +164,7 @@ def get_data_extension(head):
 def main():
 
     parser = argparse.ArgumentParser(description='Process IFF data file')
-    parser.add_argument('-e','--extract', nargs='?', action='append', help='Extract chunk (eg. AUDO)')
+    parser.add_argument('-e','--extract', nargs='?', action='append', help='Extract chunk (eg. AUDO, SOND)')
     parser.add_argument('-m','--moreinfo', action='count', default=0, help='Get more info on chunks')
 
     parser.add_argument('filepath', help='Input file path')

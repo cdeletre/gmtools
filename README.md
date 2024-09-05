@@ -62,24 +62,10 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
   -e [EXTRACT], --extract [EXTRACT]
-                        Extract chunk (eg. AUDO)
+                        Extract chunk (eg. AUDO, SOND)
   -m, --moreinfo        Get more info on chunks
   ```
 
   # example
 
   `./readiffdata.py -mm -e AUDO data.win` will gives details (level 2) on `data.win` and extract data from *AUDO* chunk into the `audo` folder.
-
-# readsond.py
-
-This tool gives extract audio metadata from a data file. It's in a draft state atm, you need to edit the offset and the filename in the script to get it working.
-
-## requirements
-
-You need Python 3.
-
-## usage
-
-```
-./readsond.py
-```
