@@ -153,7 +153,7 @@ class IFFdata:
 
 class GMIFFDdata(IFFdata):
 
-    def __init__(self, fin_path, verbose, bitrate=128, audiogroup_id=0):
+    def __init__(self, fin_path, verbose, bitrate=0, audiogroup_id=0):
         super().__init__(fin_path, verbose)
         
         self.audo = None
@@ -307,9 +307,14 @@ class GMIFFDdata(IFFdata):
 
     def _write_to_file_audo_ogg(self, audo_entry):
         chunksize = 0
-        oggenc_process = (
-            Popen(["oggenc","-b",f"{self.bitrate}","-"],bufsize=1024,stdin=PIPE, stdout=PIPE, stderr=PIPE )
-        )
+        if self.bitrate != 0:
+            oggenc_process = (
+                Popen(["oggenc","-b",f"{self.bitrate}","-"],bufsize=1024,stdin=PIPE, stdout=PIPE, stderr=PIPE )
+            )
+        else:
+            oggenc_process = (
+                Popen(["oggenc","-"],bufsize=1024,stdin=PIPE, stdout=PIPE, stderr=PIPE )
+            )
 
         thread = threading.Thread(target=self.__thread_writer, args=(oggenc_process,audo_entry))
         thread.start()
@@ -560,7 +565,7 @@ def main():
     parser.add_argument('-v','--verbose', action='count', default=0, help='Verbose level (cumulative option)')
     parser.add_argument('-m','--minsize', default=MIN_SIZE, type=int, help='Minimum WAV size in bytes to target (default 1MB)')
     parser.add_argument('-a','--audiogroup', nargs='?',action='append',type=int, help='Audiogroup ID to process (option can repeat). By default any.')
-    parser.add_argument('-b','--bitrate', default=128, help='nominal bitrate (in kbps) to encode at (oggenc -b option). Default 128 kbps')
+    parser.add_argument('-b','--bitrate', default=0, help='nominal bitrate (in kbps) to encode at (oggenc -b option). 0 for auto (default)')
     parser.add_argument('-y', '--yes', default=False, action='store_true', help='Overwrite the files if already present without asking (DANGEROUS, use with caution)')
     parser.add_argument('-d','--destdirpath', default="./Ktool.out",help='Destination directory path (default ./Ktool.out)')
 
