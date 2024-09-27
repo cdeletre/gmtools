@@ -9,11 +9,8 @@
             The updated files will be written in ./repacked
             -d, -a and -m are optionnal
 """
-
-from pathlib import Path
-import os
-
 import argparse
+from pathlib import Path
 from Klib.GMblob import GMdata
 
 MIN_SIZE = 1024*1024 # 1 MB
@@ -21,9 +18,9 @@ MIN_SIZE = 1024*1024 # 1 MB
 def main():
 
 
-    parser = argparse.ArgumentParser(description='GameMaker K-dog tool: compress wav to ogg in Gamemaker data files')
+    parser = argparse.ArgumentParser(description='GameMaker K-dog tool: compress wav to ogg, recompress ogg, in Gamemaker data files')
     parser.add_argument('-v','--verbose', action='count', default=0, help='Verbose level (cumulative option)')
-    parser.add_argument('-m','--minsize', default=MIN_SIZE, type=int, help='Minimum WAV size in bytes to target (default 1MB)')
+    parser.add_argument('-m','--minsize', default=MIN_SIZE, type=int, help='Minimum WAV/OGG size in bytes to target (default 1MB)')
     parser.add_argument('-a','--audiogroup', nargs='?',action='append',type=int, help='Audiogroup ID to process (option can repeat). By default any.')
     parser.add_argument('-b','--bitrate', default=0, help='nominal bitrate (in kbps) to encode at (oggenc -b option). 0 for auto (default)')
     parser.add_argument('-r', '--recompress', default=False, action='store_true', help='Allow ogg recompression')

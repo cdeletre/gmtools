@@ -3,11 +3,11 @@ GameMaker tools
 
 # gmKtool.py
 
-This tool convert wav audio data to ogg in the data and audiogroup files.
+This tool convert wav audio data to ogg and recompress ogg audio in the data and audiogroup files.
 
 ## requirements
 
-This tool uses `oggenc` (available with the vorbis-tools package on ubuntu) to convert wav to ogg. You need to have `oggenc` installed on the system you are running `gmKtool.py`.
+This tool uses `oggenc` and `oggdec` (available with the vorbis-tools package on ubuntu) to convert wav to ogg. You need to have `oggenc` and `oggdec` installed on the system you are running `gmKtool.py`.
 
 You also need Python 3.
 
@@ -15,9 +15,9 @@ You also need Python 3.
 
 ```
 ./gmKtool.sh -h
-usage: gmKtool.sh [-h] [-v] [-m MINSIZE] [-a [AUDIOGROUP]] [-b BITRATE] [-y] [-d DESTDIRPATH] infilepath
+usage: gmKtool.py [-h] [-v] [-m MINSIZE] [-a [AUDIOGROUP]] [-b BITRATE] [-r] [-y] [-d DESTDIRPATH] infilepath
 
-GameMaker K-dog tool: compress wav to ogg in Gamemaker data files
+GameMaker K-dog tool: compress wav to ogg, recompress ogg, in Gamemaker data files
 
 positional arguments:
   infilepath            Input file path (eg: data.win)
@@ -26,11 +26,12 @@ options:
   -h, --help            show this help message and exit
   -v, --verbose         Verbose level (cumulative option)
   -m MINSIZE, --minsize MINSIZE
-                        Minimum WAV size in bytes to target (default 1MB)
+                        Minimum WAV/OGG size in bytes to target (default 1MB)
   -a [AUDIOGROUP], --audiogroup [AUDIOGROUP]
                         Audiogroup ID to process (option can repeat). By default any.
   -b BITRATE, --bitrate BITRATE
-                        nominal bitrate (in kbps) to encode at (oggenc -b option). Default 128 kbps
+                        nominal bitrate (in kbps) to encode at (oggenc -b option). 0 for auto (default)
+  -r, --recompress      Allow ogg recompression
   -y, --yes             Overwrite the files if already present without asking (DANGEROUS, use with caution)
   -d DESTDIRPATH, --destdirpath DESTDIRPATH
                         Destination directory path (default ./Ktool.out)
@@ -38,7 +39,11 @@ options:
 
 ## example
 
-`./gm-Ktool.py data.win -d ./repacked -a 0 -a 1 -m 524288` will compress all wav data > 512 KB in audiogroup 0 (`data.win`) and 1 (`audiogroup1.dat`). The updated files will be written in `./repacked`.
+`./gmKtool.py -d ./repacked -a 0 -a 1 -m 524288 data.win` will compress all wav audio > 512 KB in audiogroup 0 (`data.win`) and 1 (`audiogroup1.dat`) with auto bitrate. The updated files will be written in `./repacked`.
+
+`./gmKtool.py data.win` will compress all wav audio > 1MB (default) in all audiogroups with auto bitrate. The updated files will be written in `./Ktool.out`
+
+`./gmKtool.py -vv -r -m 0 -b 64 data.win` will compress all wav audio, recompress all ogg audio, in all audiogroups with 64kbps bitrate. The updated files will be written in `./Ktool.out`
 
 # readiffdata.py
 
