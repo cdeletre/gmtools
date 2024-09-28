@@ -7,7 +7,7 @@ This tool convert wav audio data to ogg and recompress ogg audio in the data and
 
 ## requirements
 
-This tool uses `oggenc` and `oggdec` (available with the vorbis-tools package on ubuntu) to convert wav to ogg. You need to have `oggenc` and `oggdec` installed on the system you are running `gmKtool.py`.
+This tool uses `oggenc` and `oggdec` (available with the vorbis-tools package on ubuntu) to convert wav to ogg and ogg to wav. You need to have `oggenc` and `oggdec` installed on the system you are running `gmKtool.py`.
 
 You also need Python 3.
 
@@ -43,7 +43,7 @@ options:
 
 `./gmKtool.py data.win` will compress all wav audio > 1MB (default) in all audiogroups with auto bitrate. The updated files will be written in `./Ktool.out`
 
-`./gmKtool.py -vv -r -m 0 -b 64 data.win` will compress all wav audio, recompress all ogg audio, in all audiogroups with 64kbps bitrate. The updated files will be written in `./Ktool.out`
+`./gmKtool.py -vv -r -m 0 -b 64 data.win` will compress all wav audio, recompress all ogg audio, in all audiogroups with 64kbps bitrate. The updated files will be written in `./Ktool.out`. The verbose level will be 2.
 
 # readiffdata.py
 

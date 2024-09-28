@@ -3,6 +3,8 @@ from pathlib import Path
 import os
 from subprocess import Popen, PIPE, DEVNULL
 from struct import pack,unpack
+from time import sleep
+import sys
 
 MIN_SIZE = 1024*1024 # 1 MB
 
@@ -25,14 +27,17 @@ class IFFdata:
     def _vprint(self, msg):
         if self.verbose > 0:
             print(msg)
+            sys.stdout.flush()
 
     def _vvprint(self, msg):
         if self.verbose > 1:
             print(msg)
+            sys.stdout.flush()
 
     def _vvvprint(self, msg):
         if self.verbose > 2:
             print(msg)
+            sys.stdout.flush()
 
     def _pretty_size(self,size):
 
@@ -257,8 +262,7 @@ class GMIFFDdata(IFFdata):
                     self.fileout_size += 4 + entrysize
 
                 elif self.audo[key]["compress"] > 0 and self.audo[key]["source"] == "infile":
-                    self._vvvprint(f"Compress AUDO entry {key}")
-                    self.filein.seek(self.audo[key]["offset"])
+                    self._vvprint(f"Compress AUDO entry {key}")
 
                     self.fileout.write(pack('<I', 0xffffffff) ) # unknow size yet
                     self.fileout_size += 4
@@ -271,7 +275,7 @@ class GMIFFDdata(IFFdata):
                     self.fileout.seek( entrysize , 1)
 
                 elif self.audo[key]["compress"] > 0 and self.audo[key]["source"] == "txtp":
-                    self._vvvprint(f"Compress TXTP external sound {key}")
+                    self._vvprint(f"Compress TXTP external sound {key}")
 
                     self.fileout.write(pack('<I', 0xffffffff) ) # unknow size yet
                     self.fileout_size += 4
@@ -287,11 +291,6 @@ class GMIFFDdata(IFFdata):
             
                 self.fileout.write(b'\x00' * padding )
                 self.fileout_size += padding
-
-            padding = self._get_padding(16)
-            
-            self.fileout.write(b'\x00' * padding )
-            self.fileout_size += padding
 
             audo_size = self.fileout_size - audo_offset - 8
             self.fileout.seek(audo_offset + 4)          # jump to audo size entry
@@ -320,28 +319,29 @@ class GMIFFDdata(IFFdata):
 
     def _write_to_file_audo_ogg(self, audo_entry, compress):
 
+        offset_start = self.fileout.tell()
+        self.fileout.seek(offset_start)                 # Can't find out why, but if I don't do this
+                                                        # it writes with -4 bytes offset...
+
         self.filein.seek(4 + self.audo[audo_entry]["offset"])
 
-        offset_start = self.fileout.tell()
-
         if self.bitrate != 0:
-            oggenc_process = Popen(["oggenc", "-Q", "-b", f"{self.bitrate}", "-o", "-", "-"], stdin=PIPE, stdout=self.fileout, stderr=DEVNULL )
+            oggenc_process = Popen(["oggenc", "-Q", "-b", f"{self.bitrate}", "-o", "-", "-"], stdin=PIPE, stdout=self.fileout, stderr=DEVNULL)
         else:
-            oggenc_process = Popen(["oggenc","-Q","-o", "-", "-"],stdin=PIPE, stdout=self.fileout, stderr=DEVNULL )
+            oggenc_process = Popen(["oggenc","-Q","-o", "-", "-"],stdin=PIPE, stdout=self.fileout, stderr=DEVNULL)
 
         if compress > 1:
             # audio is already compressed, we need to uncompress it before can compress it
-            oggdec_process = Popen(["oggdec", "-Q", "-o", "-", "-"], stdin=PIPE, stdout=oggenc_process.stdin, stderr=DEVNULL )
-            oggdec_process.communicate(self.filein.read(self.audo[audo_entry]["size"]))
+            oggdec_process = Popen(["oggdec", "-Q", "-o", "-", "-"], stdin=PIPE, stdout=PIPE, stderr=DEVNULL)
+            wavdata, _ = oggdec_process.communicate(self.filein.read(self.audo[audo_entry]["size"]))
+            oggenc_process.communicate(wavdata)
+            oggdec_process.terminate()
 
         else:
             oggenc_process.communicate(self.filein.read(self.audo[audo_entry]["size"]))
-        
+
         oggenc_process.terminate()
-        
-        if(compress > 1):
-            oggdec_process.terminate()
-        
+
         return self.fileout.tell() - offset_start
         
     def get_audo(self):
