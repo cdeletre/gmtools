@@ -212,18 +212,18 @@ class GMIFFDdata(IFFdata):
     def _write_to_file_audo(self):
         self.filein.seek(self.chunk_list["AUDO"]["offset"])
         size = self.chunk_list["AUDO"]["size"]
-        self._vvprint("Writing AUDO")
+        self._vvprint(f"[AGRP {self.audiogroup_id}] Writing AUDO")
 
         audo_offset = self.fileout.tell()
 
         if self.chunk_list["AUDO"]["rebuild"] == 0:
-            self._vvprint("Direct copy AUDO")
+            self._vvprint(f"[AGRP {self.audiogroup_id}] Direct copy AUDO")
 
             self.fileout.write(self.filein.read(size + 8))
             self.fileout_size += size + 8
 
         else:
-            self._vvprint("Rebuild AUDO")
+            self._vvprint(f"[AGRP {self.audiogroup_id}] Rebuild AUDO")
             self.fileout.write(self.filein.read(4)) # Token should be the same
             self.fileout_size += 4
             self.fileout.write(pack('<I', 0xffffffff)) # Unknow size yet
@@ -253,7 +253,7 @@ class GMIFFDdata(IFFdata):
 
 
                 if self.audo[key]["compress"] == 0 and self.audo[key]["source"] == "infile":
-                    self._vvvprint(f"Direct copy AUDO entry {key}")
+                    self._vvvprint(f"[AGRP {self.audiogroup_id}] Direct copy AUDO entry {key}")
                     self.filein.seek(self.audo[key]["offset"])
 
 
@@ -262,7 +262,7 @@ class GMIFFDdata(IFFdata):
                     self.fileout_size += 4 + entrysize
 
                 elif self.audo[key]["compress"] > 0 and self.audo[key]["source"] == "infile":
-                    self._vvprint(f"Compress AUDO entry {key}")
+                    self._vvprint(f"[AGRP {self.audiogroup_id}] Compress AUDO entry {key}")
 
                     self.fileout.write(pack('<I', 0xffffffff) ) # unknow size yet
                     self.fileout_size += 4
@@ -275,7 +275,7 @@ class GMIFFDdata(IFFdata):
                     self.fileout.seek( entrysize , 1)
 
                 elif self.audo[key]["compress"] > 0 and self.audo[key]["source"] == "txtp":
-                    self._vvprint(f"Compress TXTP external sound {key}")
+                    self._vvprint(f"[AGRP {self.audiogroup_id}] Compress TXTP external sound {key}")
 
                     self.fileout.write(pack('<I', 0xffffffff) ) # unknow size yet
                     self.fileout_size += 4
