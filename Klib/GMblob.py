@@ -20,6 +20,7 @@ class IFFdata:
         self.fileout_size = 0 # includes FORM (4B) and size (4B)
 
         self.verbose = verbose
+        self.buffered = False
         self.chunk_list = None
 
         self.__init_chunk_list()
@@ -27,17 +28,20 @@ class IFFdata:
     def _vprint(self, msg):
         if self.verbose > 0:
             print(msg)
-            sys.stdout.flush()
+            if not self.buffered:
+                sys.stdout.flush()
 
     def _vvprint(self, msg):
         if self.verbose > 1:
             print(msg)
-            sys.stdout.flush()
+            if not self.buffered:
+                sys.stdout.flush()
 
     def _vvvprint(self, msg):
         if self.verbose > 2:
             print(msg)
-            sys.stdout.flush()
+            if not self.buffered:
+                sys.stdout.flush()
 
     def _pretty_size(self,size):
 
@@ -140,6 +144,9 @@ class IFFdata:
 
     def get_chunk_list(self):
         return self.chunk_list
+    
+    def set_buffered(self, buffered):
+        self.buffered = buffered
 
 class GMIFFDdata(IFFdata):
 
@@ -151,6 +158,7 @@ class GMIFFDdata(IFFdata):
         self.audiogroup_id = audiogroup_id
         self.bitrate = bitrate
         self.updated_entries = 0
+        self.no_write = False
 
         self.__init_audo()
     
@@ -346,6 +354,29 @@ class GMIFFDdata(IFFdata):
         
     def get_audo(self):
         return self.audo
+    
+    def no_write(self, no_write):
+        if self.audiogroup_id in no_write:
+            self.no_write = True
+            self._vprint(f"[AGRP {self.audiogroup_id}] NO_WRITE")
+        else:
+            self._vprint("[AGRP {self.audiogroup_id}] ONLY_WRITE")
+
+
+        # also no_write audiogroupN.dat files
+        for _,key in enumerate(self.audiogroup_dat.keys()):
+            self.audiogroup_dat[key].no_write(no_write)
+
+    def only_write(self, only_write):
+        if not self.audiogroup_id in only_write:
+            self.no_write = True
+            self._vprint(f"[AGRP {self.audiogroup_id}] NO_WRITE")
+        else:
+            self._vprint(f"[AGRP {self.audiogroup_id}] ONLY_WRITE")
+
+        # also only_write audiogroupN.dat files
+        for _,key in enumerate(self.audiogroup_dat.keys()):
+            self.audiogroup_dat[key].only_write(only_write)
 
     def audo_get_entry(self,n,filein_path):
         with open(filein_path, 'wb') as fout:
@@ -364,22 +395,25 @@ class GMaudiogroup(GMIFFDdata):
         self.chunk_list["AUDO"]["rebuild"] = 1
 
     def write_changes(self, OUT_DIR):
-        self._vprint(f"Writing {self.filein_path.name}")
-        self.fileout_path = OUT_DIR / self.filein_path.name
-        self._open_fileout()
-
-        if self.chunk_list["FORM"]["rebuild"] == 1:
-
-            for _,token in enumerate(self.chunk_list):
-                if token == "AUDO":
-                    self._write_to_file_audo()
-                else:
-                    self._write_to_file_otherchunk(token)
-
-            self.fileout.seek(4)
-            self.fileout.write(pack('<I', self.fileout_size - 8)) # update size
+        if self.no_write:
+            self._vprint(f"No write set for AGRP {self.audiogroup_id}: Will not write {self.filein_path.name}")
         else:
-            self._write_to_file_otherchunk("FORM")
+            self._vprint(f"Writing {self.filein_path.name}")
+            self.fileout_path = OUT_DIR / self.filein_path.name
+            self._open_fileout()
+
+            if self.chunk_list["FORM"]["rebuild"] == 1:
+
+                for _,token in enumerate(self.chunk_list):
+                    if token == "AUDO":
+                        self._write_to_file_audo()
+                    else:
+                        self._write_to_file_otherchunk(token)
+
+                self.fileout.seek(4)
+                self.fileout.write(pack('<I', self.fileout_size - 8)) # update size
+            else:
+                self._write_to_file_otherchunk("FORM")
 
 class GMdata(GMIFFDdata):
 
@@ -553,25 +587,28 @@ class GMdata(GMIFFDdata):
             self._vprint(f"{self.get_total_updated_entries()} audo entrie(s) will be compressed")
 
     def write_changes(self, OUT_DIR):
-        self._vprint(f"Writing {self.filein_path.name}")
-
-        self.fileout_path = OUT_DIR / self.filein_path.name
-        self._open_fileout()
-
-        if self.chunk_list["FORM"]["rebuild"] == 1:
-
-            for _,token in enumerate(self.chunk_list):
-                if token == "SOND":
-                    self.__write_to_file_sond()
-                elif token == "AUDO":
-                    self._write_to_file_audo()
-                else:
-                    self._write_to_file_otherchunk(token)
-
-            self.fileout.seek(4)
-            self.fileout.write(pack('<I', self.fileout_size - 8)) # update size
+        if self.no_write:
+            self._vprint(f"No write set for AGRP {self.audiogroup_id}: Will not write {self.filein_path.name}")
         else:
-            self._write_to_file_otherchunk("FORM")
+            self._vprint(f"Writing {self.filein_path.name}")
+
+            self.fileout_path = OUT_DIR / self.filein_path.name
+            self._open_fileout()
+
+            if self.chunk_list["FORM"]["rebuild"] == 1:
+
+                for _,token in enumerate(self.chunk_list):
+                    if token == "SOND":
+                        self.__write_to_file_sond()
+                    elif token == "AUDO":
+                        self._write_to_file_audo()
+                    else:
+                        self._write_to_file_otherchunk(token)
+
+                self.fileout.seek(4)
+                self.fileout.write(pack('<I', self.fileout_size - 8)) # update size
+            else:
+                self._write_to_file_otherchunk("FORM")
         
         # also write audiogroupN.dat files
         for _,key in enumerate(self.audiogroup_dat.keys()):
