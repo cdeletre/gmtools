@@ -15,7 +15,7 @@ You also need Python 3.
 
 ```
 ./gmKtool.sh -h
-usage: gmKtool.py [-h] [-v] [-m MINSIZE] [-a [AUDIOGROUP]] [-b BITRATE] [-r] [-y] [-d DESTDIRPATH] infilepath
+usage: gmKtool.py [-h] [-v] [-m MINSIZE] [-a [AUDIOGROUP]] [-N [NO_WRITE]] [-O [ONLY_WRITE]] [-b BITRATE] [-B] [-r] [-y] [-d DESTDIRPATH] infilepath
 
 GameMaker K-dog tool: compress wav to ogg, recompress ogg, in Gamemaker data files
 
@@ -29,8 +29,13 @@ options:
                         Minimum WAV/OGG size in bytes to target (default 1MB)
   -a [AUDIOGROUP], --audiogroup [AUDIOGROUP]
                         Audiogroup ID to process (option can repeat). By default any.
+  -N [NO_WRITE], --no-write [NO_WRITE]
+                        Don't write the updated file for this audiogroup number (option can repeat). By default none.
+  -O [ONLY_WRITE], --only-write [ONLY_WRITE]
+                        Only write the updated file for this audiogroup number (option can repeat). By default write all.
   -b BITRATE, --bitrate BITRATE
                         nominal bitrate (in kbps) to encode at (oggenc -b option). 0 for auto (default)
+  -B, --buffered        Don't flush stdout after each line (incompatible with the patcher screen)
   -r, --recompress      Allow ogg recompression
   -y, --yes             Overwrite the files if already present without asking (DANGEROUS, use with caution)
   -d DESTDIRPATH, --destdirpath DESTDIRPATH
@@ -44,6 +49,8 @@ options:
 `./gmKtool.py data.win` will compress all wav audio > 1MB (default) in all audiogroups with auto bitrate. The updated files will be written in `./Ktool.out`
 
 `./gmKtool.py -vv -r -m 0 -b 64 data.win` will compress all wav audio, recompress all ogg audio, in all audiogroups with 64kbps bitrate. The updated files will be written in `./Ktool.out`. The verbose level will be 2.
+
+`./gmKtool.py -vv -O 0 -O 1 -m 0 -b 64 data.win` will do the same as in the previous example but it will only write the updated `data.win` (SOND entries, and if present AUDO entries from audiogroup 0), all linked `audiogroupN.dat` won't be written. This might be useful when debugging, testing as you don't want to perform the ogg compression for each test run. Note that `-O` and `-N` can not be used together.
 
 # readiffdata.py
 
