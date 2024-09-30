@@ -417,8 +417,12 @@ class GMaudiogroup(GMIFFDdata):
 
 class GMdata(GMIFFDdata):
 
+    GM_DEFAULT = 0x0000
+    GM_2024_6 = 0x1806
+
     def __init__(self, fin_path, verbose, bitrate, audiogroup_filter=[]):
         super().__init__(fin_path, verbose, bitrate, 0)
+        self.gm_version = GMdata.GM_DEFAULT
 
         self.sond = None
         self.audiogroup_filter = audiogroup_filter
@@ -443,6 +447,14 @@ class GMdata(GMIFFDdata):
         for i in range(nb_entries):
             offset_table.append(unpack('<I',self.filein.read(4))[0])
 
+        if offset_table[1] - offset_table[0] == 40 and len(offset_table) > 1:
+                self.set_gm_version(GMdata.GM_2024_6)
+
+        elif len(offset_table) > 0:
+            self.filein.seek(offset_table[0] + 32)
+            if unpack('<I', self.filein.read(4))[0] > 0:
+                self.set_gm_version(GMdata.GM_2024_6)
+
         self.sond = {}
         
         for i,offset in enumerate(offset_table):
@@ -454,6 +466,11 @@ class GMdata(GMIFFDdata):
             file_offset = unpack('<I',self.filein.read(4))[0]
             [ effect, volume, pitch, audiogroup, audiofile ] = \
                 unpack('<IffII', self.filein.read(20))
+            
+            if self.gm_version == GMdata.GM_2024_6:
+                audiolength = unpack('<f',self.filein.read(4))[0]
+            else:
+                audiolength = 0
             
             name = self.get_str(name_offset)
             type = self.get_str(type_offset)
@@ -477,6 +494,7 @@ class GMdata(GMIFFDdata):
                                     "pitch" : pitch,
                                     "audiogroup" : audiogroup,
                                     "audiofile" : audiofile,
+                                    "audiolength": audiolength,
                                     "rebuild" : 0
                                 }
             self._vvvprint(f"SOND entry {i:#04}: {self.sond[sondkey]}")
@@ -489,16 +507,29 @@ class GMdata(GMIFFDdata):
  
     def __sond_get_raw_entry(self,key):
 
-        return pack('<IIIIIffII',   self.sond[key]["name_offset"], \
-                                    self.sond[key]["flags_raw"], \
-                                    self.sond[key]["type_offset"], \
-                                    self.sond[key]["file_offset"], \
-                                    self.sond[key]["effect"], \
-                                    self.sond[key]["volume"], \
-                                    self.sond[key]["pitch"], \
-                                    self.sond[key]["audiogroup"], \
-                                    self.sond[key]["audiofile"]
-                    )
+        if self.gm_version == GMdata.GM_2024_6:
+            return pack('<IIIIIffIIf',   self.sond[key]["name_offset"], \
+                                self.sond[key]["flags_raw"], \
+                                self.sond[key]["type_offset"], \
+                                self.sond[key]["file_offset"], \
+                                self.sond[key]["effect"], \
+                                self.sond[key]["volume"], \
+                                self.sond[key]["pitch"], \
+                                self.sond[key]["audiogroup"], \
+                                self.sond[key]["audiofile"], \
+                                self.sond[key]["audiolength"]
+                        )
+        else:
+            return pack('<IIIIIffII',   self.sond[key]["name_offset"], \
+                                        self.sond[key]["flags_raw"], \
+                                        self.sond[key]["type_offset"], \
+                                        self.sond[key]["file_offset"], \
+                                        self.sond[key]["effect"], \
+                                        self.sond[key]["volume"], \
+                                        self.sond[key]["pitch"], \
+                                        self.sond[key]["audiogroup"], \
+                                        self.sond[key]["audiofile"]
+                        )
     
     def __sond_update_flags_raw(self, key):
         self.sond[key]["flags_raw"] =   self.sond[key]["flags"]["isRegular"] * 0x64 | \
@@ -534,19 +565,24 @@ class GMdata(GMIFFDdata):
             self.fileout_size += 12
             self.fileout.write(self.filein.read(len(self.sond.keys()) * 4)) # offsets don't change
             self.fileout_size += len(self.sond.keys()) * 4
+            
+            if self.gm_version == GMdata.GM_2024_6:
+                sond_entry_size = 40
+            else:
+                sond_entry_size = 36
 
             for n, key in enumerate(self.sond.keys()):
                 if self.sond[key]["rebuild"] == 0:
                     self._vvvprint(f"Direct copy SOND entry {key}")
                     # We copy the entry from the input file
-                    self.fileout.write(self.filein.read(36)) # same entry (36B)
-                    
+                    self.fileout.write(self.filein.read(sond_entry_size)) # same entry (36 / 40B)
                 else:
                     self._vvvprint(f"Rebuild SOND entry {key}")
-                    self.filein.seek(36,1) # we jump this chunk on the input file (36B)
+                    self.filein.seek(sond_entry_size,1) # we jump this chunk on the input file (36 / 40B)
+
                     self.fileout.write(self.__sond_get_raw_entry(key))
 
-                self.fileout_size += 36
+                self.fileout_size += sond_entry_size
 
             padding = self._get_padding(16)
             
@@ -556,6 +592,9 @@ class GMdata(GMIFFDdata):
     def get_sond(self):
         return self.sond
 
+    def set_gm_version(self, version):
+        self.gm_version = version
+    
     def audio_enable_compress(self ,minsize, recompress=False):
 
         # Iter each entry in SOND
