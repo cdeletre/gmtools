@@ -24,7 +24,9 @@ def main():
     parser.add_argument('-a', '--audiogroup', nargs='?',action='append',type=int, help='Audiogroup ID to process (option can repeat). By default any.')
     parser.add_argument('-N', '--no-write', nargs="?",action='append', type=int, help='Don\'t write the updated file for this audiogroup number (option can repeat). By default none.')
     parser.add_argument('-O', '--only-write', nargs="?",action='append', type=int, help='Only write the updated file for this audiogroup number (option can repeat). By default write all.')
-    parser.add_argument('-b', '--bitrate', default=0, help='nominal bitrate (in kbps) to encode at (oggenc -b option). 0 for auto (default)')
+    parser.add_argument('-b', '--bitrate', default=0, type=int, help='nominal bitrate (in kbps) to encode at (oggenc -b option). 0 for auto (default)')
+    parser.add_argument('-D', '--downmix', default=False, action='store_true', help='Downmix stereo to mono (oggenc --downmix option)')
+    parser.add_argument('-R', '--resample', default=0, type=int, help='Resample input data to sampling rate n (Hz) (oggenc --resample option). Supported values: 8000, 11025, 22050, 32000, 44100, 48000')
     parser.add_argument('-B', '--buffered', default=False, action='store_true', help='Don\'t flush stdout after each line (incompatible with the patcher screen)')
     parser.add_argument('-r', '--recompress', default=False, action='store_true', help='Allow ogg recompression')
     parser.add_argument('-y', '--yes', default=False, action='store_true', help='Overwrite the files if already present without asking (DANGEROUS, use with caution)')
@@ -36,6 +38,10 @@ def main():
 
     if args.no_write != None and args.only_write != None:
         print("-N and -O are incompatible together, use only one")
+        exit(1)
+
+    if not args.resample in [ 8000, 11025, 22050, 32000, 44100, 48000 ]:
+        print("-R supported values are 8000, 11025, 22050, 32000, 44100, 48000")
         exit(1)
 
     if args.audiogroup:
@@ -62,7 +68,12 @@ def main():
     else:
         OUT_DIR.mkdir()
 
-    myiffdata = GMdata(INFILE_PATH, args.verbose, args.bitrate, audiogroup_filter)
+    audiosettings = {}
+    audiosettings["bitrate"] = args.bitrate
+    audiosettings["downmix"] = args.downmix
+    audiosettings["resample"] = args.resample
+
+    myiffdata = GMdata(INFILE_PATH, args.verbose, audiosettings, audiogroup_filter)
 
     if  args.no_write != None:
         myiffdata.no_write(args.no_write)

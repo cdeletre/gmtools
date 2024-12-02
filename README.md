@@ -14,8 +14,8 @@ You also need Python 3.
 ## usage
 
 ```
-./gmKtool.sh -h
-usage: gmKtool.py [-h] [-v] [-m MINSIZE] [-a [AUDIOGROUP]] [-N [NO_WRITE]] [-O [ONLY_WRITE]] [-b BITRATE] [-B] [-r] [-y] [-d DESTDIRPATH] infilepath
+./gmKtool.py -h
+usage: gmKtool.py [-h] [-v] [-m MINSIZE] [-a [AUDIOGROUP]] [-N [NO_WRITE]] [-O [ONLY_WRITE]] [-b BITRATE] [-D] [-R RESAMPLE] [-B] [-r] [-y] [-d DESTDIRPATH] infilepath
 
 GameMaker K-dog tool: compress wav to ogg, recompress ogg, in Gamemaker data files
 
@@ -35,6 +35,9 @@ options:
                         Only write the updated file for this audiogroup number (option can repeat). By default write all.
   -b BITRATE, --bitrate BITRATE
                         nominal bitrate (in kbps) to encode at (oggenc -b option). 0 for auto (default)
+  -D, --downmix         Downmix stereo to mono (oggenc --downmix option)
+  -R RESAMPLE, --resample RESAMPLE
+                        Resample input data to sampling rate n (Hz) (oggenc --resample option). Supported values: 8000, 11025, 22050, 32000, 44100, 48000
   -B, --buffered        Don't flush stdout after each line (incompatible with the patcher screen)
   -r, --recompress      Allow ogg recompression
   -y, --yes             Overwrite the files if already present without asking (DANGEROUS, use with caution)
@@ -51,6 +54,8 @@ options:
 `./gmKtool.py -vv -r -m 0 -b 64 data.win` will compress all wav audio, recompress all ogg audio, in all audiogroups with 64kbps bitrate. The updated files will be written in `./Ktool.out`. The verbose level will be 2.
 
 `./gmKtool.py -vv -O 0 -O 1 -m 0 -b 64 data.win` will do the same as in the previous example but it will only write the updated `data.win` (SOND entries, and if present AUDO entries from audiogroup 0), all linked `audiogroupN.dat` won't be written. This might be useful when debugging, testing as you don't want to perform the ogg compression for each test run. Note that `-O` and `-N` can not be used together.
+
+`./gmKtool.py -vv -D -R 22050 -m 0 -r -b 32 data.win` will downmix to mono and resample to 22kHz all audio (including ogg, no minimum file size limit) and will use a 32 kbps bitrate.
 
 # readiffdata.py
 
