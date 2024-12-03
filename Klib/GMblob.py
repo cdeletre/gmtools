@@ -309,14 +309,14 @@ class GMIFFDdata(IFFdata):
         options = []
         if self.audiosettings["bitrate"] != 0:
             options.append("-b")
-            options.append(f"{self.audiosettings["bitrate"]}")
+            options.append(f"{self.audiosettings['bitrate']}")
 
         if self.audiosettings["downmix"]:
             options.append("--downmix")
         
         if self.audiosettings["resample"] != 0:
             options.append("--resample")
-            options.append(f"{self.audiosettings["resample"]}")
+            options.append(f"{self.audiosettings['resample']}")
         
         return options
 
