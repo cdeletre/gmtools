@@ -40,7 +40,7 @@ def main():
         print("-N and -O are incompatible together, use only one")
         exit(1)
 
-    if not args.resample in [ 8000, 11025, 22050, 32000, 44100, 48000 ]:
+    if not args.resample in [ 0, 8000, 11025, 22050, 32000, 44100, 48000 ]:
         print("-R supported values are 8000, 11025, 22050, 32000, 44100, 48000")
         exit(1)
 
